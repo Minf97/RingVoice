@@ -1,187 +1,69 @@
 import SwiftUI
 
-// API 索引:
-// LazyVStack 懒加载纵向列表。Docs: https://developer.apple.com/documentation/swiftui/lazyvstack
-// ScrollView 页面滚动容器。Docs: https://developer.apple.com/documentation/swiftui/scrollview
-// Button 触发用户动作。Docs: https://developer.apple.com/documentation/swiftui/button
-// Image 展示系统图标。Docs: https://developer.apple.com/documentation/swiftui/image
-// withAnimation 包裹状态动画。Docs: https://developer.apple.com/documentation/swiftui/withanimation(_:_:)
-// Sheet 弹出编辑面板。Docs: https://developer.apple.com/documentation/swiftui/view/sheet(ispresented:ondismiss:content:)
-// ProgressView 展示加载状态。Docs: https://developer.apple.com/documentation/swiftui/progressview
-
 struct MainWorkflowView: View {
-    // API: @State 保存主链路状态，变化后自动刷新界面。
-    // Docs: https://developer.apple.com/documentation/swiftui/state
     @State private var workflow = VoiceWorkflow()
-    @State private var isEditorPresented = false
+    @StateObject private var recorder = PhoneSpeechRecorder()
     @State private var isGenerating = false
     @State private var errorText: String?
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 16) {
-                heroSection
-                ringCaptureSection
-                transcriptSection
-                aiSection
-                cardsSection
-            }
-            .padding(18)
-        }
-        .background(Color(.systemGroupedBackground))
-        .sheet(isPresented: $isEditorPresented) {
-            TranscriptEditorSheet(transcript: $workflow.transcript)
-        }
-    }
-
-    private var heroSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("RingVoice")
-                .font(.system(size: 34, weight: .bold))
-
-            Text("把戒指录音整理成可执行的索引卡。")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            HStack(spacing: 10) {
-                statusBadge("语音转文字", isReady: workflow.canProcess)
-                statusBadge("AI 润色", isReady: workflow.stage == .processed)
-                statusBadge("索引卡", isReady: workflow.cards.isEmpty == false)
-            }
-        }
-        .padding(.top, 24)
-    }
-
-    private var ringCaptureSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                Image(systemName: "waveform.circle.fill")
-                    .font(.system(size: 34))
-                    .foregroundStyle(.blue)
-
-                VStack(alignment: .leading, spacing: 6) {
-                    sectionTitle("戒指录音入口")
-
-                    Text("Demo 里先用按钮模拟戒指按下、录音上传和语音转文字。")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
+        NavigationStack {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    cardsSection
                 }
+                .padding(.horizontal, 18)
+                .padding(.top, 18)
+                .padding(.bottom, 120)
             }
-
-            HStack(spacing: 10) {
-                primaryButton("模拟录音") {
-                    workflow.loadSampleTranscript()
-                    errorText = nil
-                }
-
-                secondaryButton("重置") {
-                    workflow.reset()
-                    errorText = nil
-                }
+            .background(BrandColor.canvas.ignoresSafeArea())
+            .navigationTitle("RingVoice")
+            .safeAreaInset(edge: .bottom) {
+                recorderBar
             }
         }
-        .padding(16)
-        .background(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-    }
-
-    private var transcriptSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                sectionTitle("转写文本")
-
-                Spacer()
-
-                Button("编辑") {
-                    isEditorPresented = true
-                }
-                .font(.subheadline)
-                .disabled(!workflow.canProcess)
-            }
-
-            Text(workflow.canProcess ? workflow.transcript : "等待戒指录音上传后生成文本。")
-                .font(.body)
-                .foregroundStyle(workflow.canProcess ? .primary : .secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .background(Color(.secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-
-            primaryButton(isGenerating ? "AI 处理中" : "AI 总结成卡") {
-                Task {
-                    await generateWithAI()
-                }
-            }
-            .disabled(!workflow.canProcess || isGenerating)
-
-            if isGenerating {
-                ProgressView("正在调用阶跃 API")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            if let errorText {
-                Text(errorText)
-                    .font(.caption)
-                    .foregroundStyle(.red)
-            }
-        }
-        .padding(16)
-        .background(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-    }
-
-    private var aiSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            sectionTitle("AI 润色与总结")
-
-            if workflow.stage == .processed {
-                resultBlock(title: "润色文本", bodyText: workflow.polishedText)
-                resultBlock(title: "内容总结", bodyText: workflow.summary)
-            } else {
-                Text("点击“AI 总结成卡”后，这里会展示润色后的文本和一句话总结。")
-                    .font(.body)
-                    .foregroundStyle(.secondary)
-            }
-        }
-        .padding(16)
-        .background(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     private var cardsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            sectionTitle("索引卡")
+            Text("索引卡")
+                .font(.title2)
+                .fontWeight(.semibold)
+                .foregroundStyle(BrandColor.ink)
 
             if workflow.cards.isEmpty {
-                emptyCard
+                emptyIndexCard
             } else {
                 ForEach(workflow.cards) { card in
-                    insightCard(card)
+                    indexCard(card)
                 }
             }
         }
     }
 
-    private var emptyCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("暂无卡片")
-                .font(.headline)
+    private var emptyIndexCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            intentPill("待录音")
 
-            Text("AI 会把语音内容拆成 TODO、定时和长期素材。")
+            Text("还没有索引卡")
+                .font(.title3)
+                .fontWeight(.semibold)
+                .foregroundStyle(BrandColor.ink)
+
+            Text("点击底部按钮，用手机录音；戒指录音接入同一条 AI 处理链路。")
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(BrandColor.body)
         }
-        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .padding(18)
+        .background(BrandColor.canvasSoft)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private func insightCard(_ card: InsightCard) -> some View {
+    private func indexCard(_ card: InsightCard) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack {
-                statusBadge(card.intent.rawValue, isReady: true)
+            HStack(alignment: .firstTextBaseline) {
+                intentPill(card.intent.rawValue)
 
                 Spacer()
 
@@ -189,97 +71,173 @@ struct MainWorkflowView: View {
                     Text(timeText)
                         .font(.caption)
                         .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(BrandColor.body)
                 }
             }
 
             Text(card.title)
                 .font(.title3)
                 .fontWeight(.semibold)
+                .foregroundStyle(BrandColor.ink)
 
             Text(card.detail)
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(BrandColor.body)
 
             Button(card.actionTitle) {}
-                .buttonStyle(.bordered)
-        }
-        .padding(16)
-        .background(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
-    }
-
-    private func sectionTitle(_ title: String) -> some View {
-        Text(title)
-            .font(.headline)
-    }
-
-    private func resultBlock(title: String, bodyText: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.caption)
+                .font(.subheadline)
                 .fontWeight(.semibold)
-                .foregroundStyle(.secondary)
-
-            Text(bodyText)
-                .font(.body)
+                .foregroundStyle(BrandColor.primary)
         }
-        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .padding(18)
+        .background(BrandColor.canvasSoft)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
-    private func primaryButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline)
-                .fontWeight(.semibold)
+    private var recorderBar: some View {
+        VStack(spacing: 10) {
+            if let statusText {
+                Text(statusText)
+                    .font(.caption)
+                    .foregroundStyle(statusColor)
+                    .multilineTextAlignment(.center)
+            }
+
+            Button {
+                toggleRecording()
+            } label: {
+                HStack(spacing: 10) {
+                    if isGenerating {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Image(systemName: recorder.phase.isRecording ? "stop.fill" : "mic.fill")
+                    }
+
+                    Text(recordButtonTitle)
+                        .font(.headline)
+                }
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .frame(height: 58)
+                .foregroundStyle(.white)
+                .background(recordButtonColor)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .disabled(isGenerating)
+            .accessibilityLabel(recordButtonTitle)
         }
-        .buttonStyle(.borderedProminent)
+        .padding(.horizontal, 18)
+        .padding(.top, 12)
+        .padding(.bottom, 8)
+        .background(BrandColor.canvas)
     }
 
-    private func secondaryButton(_ title: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(title)
-                .font(.subheadline)
-                .fontWeight(.semibold)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+    private var statusText: String? {
+        if let errorText {
+            return errorText
         }
-        .buttonStyle(.bordered)
+
+        if case .failed(let message) = recorder.phase {
+            return message
+        }
+
+        if recorder.phase.isRecording {
+            return recorder.transcript.isEmpty ? "正在听你说话" : recorder.transcript
+        }
+
+        if isGenerating {
+            return "正在润色并生成索引卡"
+        }
+
+        return nil
     }
 
-    private func statusBadge(_ title: String, isReady: Bool) -> some View {
+    private var statusColor: Color {
+        if errorText != nil {
+            return .red
+        }
+
+        if case .failed = recorder.phase {
+            return .red
+        }
+
+        return BrandColor.body
+    }
+
+    private var recordButtonTitle: String {
+        if isGenerating {
+            return "处理中"
+        }
+
+        return recorder.phase.isRecording ? "结束录音" : "手机录音"
+    }
+
+    private var recordButtonColor: Color {
+        recorder.phase.isRecording ? BrandColor.ink : BrandColor.primary
+    }
+
+    private func intentPill(_ title: String) -> some View {
         Text(title)
             .font(.caption)
             .fontWeight(.semibold)
+            .foregroundStyle(BrandColor.ink)
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
-            .background(isReady ? Color.green.opacity(0.14) : Color(.secondarySystemGroupedBackground))
-            .foregroundStyle(isReady ? .green : .secondary)
+            .background(BrandColor.canvas)
             .clipShape(Capsule())
     }
 
-    // 真实 AI
-    @MainActor
-    private func generateWithAI() async {
-        isGenerating = true
-        errorText = nil
-
-        do {
-            let client = try StepAIClient.fromEnvironment()
-            let result = try await client.generateInsights(from: workflow.transcript)
-
-            withAnimation(.easeOut(duration: 0.22)) {
-                workflow.applyAIResult(result)
+    // 录音切换
+    private func toggleRecording() {
+        Task {
+            do {
+                if recorder.phase.isRecording {
+                    try await finishPhoneRecording()
+                } else {
+                    try await startPhoneRecording()
+                }
+            } catch {
+                errorText = error.localizedDescription
             }
-        } catch {
-            errorText = error.localizedDescription
         }
-
-        isGenerating = false
     }
+
+    // 手机开始
+    @MainActor
+    private func startPhoneRecording() async throws {
+        workflow.reset()
+        errorText = nil
+        try await recorder.start()
+    }
+
+    // 手机结束
+    @MainActor
+    private func finishPhoneRecording() async throws {
+        let transcript = try recorder.stop()
+        workflow.setTranscript(transcript)
+        try await generateWithAI()
+    }
+
+    // AI 处理
+    @MainActor
+    private func generateWithAI() async throws {
+        isGenerating = true
+        defer { isGenerating = false }
+
+        let client = try StepAIClient.fromEnvironment()
+        let result = try await client.generateInsights(from: workflow.transcript)
+
+        withAnimation(.easeOut(duration: 0.22)) {
+            workflow.applyAIResult(result)
+        }
+    }
+}
+
+private enum BrandColor {
+    static let primary = Color(red: 1, green: 0.31, blue: 0)
+    static let ink = Color(red: 0.13, green: 0.08, blue: 0.08)
+    static let body = Color(red: 0.38, green: 0.36, blue: 0.32)
+    static let canvas = Color(red: 1, green: 1, blue: 0.98)
+    static let canvasSoft = Color(red: 0.97, green: 0.96, blue: 0.94)
 }

@@ -21,6 +21,7 @@
 		A1000000000000000000000C /* AIWorkflowResultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D /* AIWorkflowResultTests.swift */; };
 		A1000000000000000000000D /* PromptLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E /* PromptLabView.swift */; };
 		A1000000000000000000000E /* PromptLabTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001F /* PromptLabTests.swift */; };
+		A1000000000000000000000F /* PhoneSpeechRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022 /* PhoneSpeechRecorder.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,6 +51,7 @@
 		A1000000000000000000001D /* AIWorkflowResultTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIWorkflowResultTests.swift; sourceTree = "<group>"; };
 		A1000000000000000000001E /* PromptLabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptLabView.swift; sourceTree = "<group>"; };
 		A1000000000000000000001F /* PromptLabTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptLabTests.swift; sourceTree = "<group>"; };
+		A10000000000000000000022 /* PhoneSpeechRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSpeechRecorder.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,6 +91,7 @@
 				A10000000000000000000018 /* MainWorkflowView.swift */,
 				A1000000000000000000001C /* TranscriptEditorSheet.swift */,
 				A1000000000000000000001B /* StepAIClient.swift */,
+				A10000000000000000000022 /* PhoneSpeechRecorder.swift */,
 				A10000000000000000000014 /* DemoSession.swift */,
 				A10000000000000000000019 /* VoiceWorkflow.swift */,
 				A10000000000000000000013 /* Assets.xcassets */,
@@ -222,6 +225,7 @@
 				A10000000000000000000007 /* MainWorkflowView.swift in Sources */,
 				A1000000000000000000000B /* TranscriptEditorSheet.swift in Sources */,
 				A1000000000000000000000A /* StepAIClient.swift in Sources */,
+				A1000000000000000000000F /* PhoneSpeechRecorder.swift in Sources */,
 				A10000000000000000000004 /* DemoSession.swift in Sources */,
 				A10000000000000000000008 /* VoiceWorkflow.swift in Sources */,
 			);
@@ -381,6 +385,8 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "用于手机录音并生成索引卡";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "用于将手机录音转写成文本";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -410,6 +416,8 @@
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "用于手机录音并生成索引卡";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "用于将手机录音转写成文本";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;

@@ -29,13 +29,18 @@ struct VoiceWorkflow {
         transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
     }
 
-    // 示例语音
-    mutating func loadSampleTranscript() {
-        transcript = "明天下午三点提醒我给客户发方案，然后把方案里的报价检查一下。还有今天想到一个点，戒指结束录音的时候最好震一下。"
+    // 写入转写
+    mutating func setTranscript(_ text: String) {
+        transcript = text.trimmingCharacters(in: .whitespacesAndNewlines)
         polishedText = ""
         summary = ""
         cards = []
         stage = .draft
+    }
+
+    // 示例语音
+    mutating func loadSampleTranscript() {
+        setTranscript("明天下午三点提醒我给客户发方案，然后把方案里的报价检查一下。还有今天想到一个点，戒指结束录音的时候最好震一下。")
     }
 
     // AI 整理
