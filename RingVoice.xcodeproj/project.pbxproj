@@ -16,6 +16,11 @@
 		A10000000000000000000007 /* MainWorkflowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000018 /* MainWorkflowView.swift */; };
 		A10000000000000000000008 /* VoiceWorkflow.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000019 /* VoiceWorkflow.swift */; };
 		A10000000000000000000009 /* VoiceWorkflowTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001A /* VoiceWorkflowTests.swift */; };
+		A1000000000000000000000A /* StepAIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001B /* StepAIClient.swift */; };
+		A1000000000000000000000B /* TranscriptEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001C /* TranscriptEditorSheet.swift */; };
+		A1000000000000000000000C /* AIWorkflowResultTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001D /* AIWorkflowResultTests.swift */; };
+		A1000000000000000000000D /* PromptLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E /* PromptLabView.swift */; };
+		A1000000000000000000000E /* PromptLabTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001F /* PromptLabTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,6 +45,11 @@
 		A10000000000000000000018 /* MainWorkflowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainWorkflowView.swift; sourceTree = "<group>"; };
 		A10000000000000000000019 /* VoiceWorkflow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceWorkflow.swift; sourceTree = "<group>"; };
 		A1000000000000000000001A /* VoiceWorkflowTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoiceWorkflowTests.swift; sourceTree = "<group>"; };
+		A1000000000000000000001B /* StepAIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepAIClient.swift; sourceTree = "<group>"; };
+		A1000000000000000000001C /* TranscriptEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptEditorSheet.swift; sourceTree = "<group>"; };
+		A1000000000000000000001D /* AIWorkflowResultTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIWorkflowResultTests.swift; sourceTree = "<group>"; };
+		A1000000000000000000001E /* PromptLabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptLabView.swift; sourceTree = "<group>"; };
+		A1000000000000000000001F /* PromptLabTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PromptLabTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,7 +85,10 @@
 				A10000000000000000000011 /* RingVoiceApp.swift */,
 				A10000000000000000000012 /* ContentView.swift */,
 				A10000000000000000000017 /* DebugLabView.swift */,
+				A1000000000000000000001E /* PromptLabView.swift */,
 				A10000000000000000000018 /* MainWorkflowView.swift */,
+				A1000000000000000000001C /* TranscriptEditorSheet.swift */,
+				A1000000000000000000001B /* StepAIClient.swift */,
 				A10000000000000000000014 /* DemoSession.swift */,
 				A10000000000000000000019 /* VoiceWorkflow.swift */,
 				A10000000000000000000013 /* Assets.xcassets */,
@@ -97,6 +110,8 @@
 			children = (
 				A10000000000000000000015 /* DemoSessionTests.swift */,
 				A1000000000000000000001A /* VoiceWorkflowTests.swift */,
+				A1000000000000000000001D /* AIWorkflowResultTests.swift */,
+				A1000000000000000000001F /* PromptLabTests.swift */,
 			);
 			path = RingVoiceTests;
 			sourceTree = "<group>";
@@ -203,7 +218,10 @@
 				A10000000000000000000001 /* RingVoiceApp.swift in Sources */,
 				A10000000000000000000002 /* ContentView.swift in Sources */,
 				A10000000000000000000006 /* DebugLabView.swift in Sources */,
+				A1000000000000000000000D /* PromptLabView.swift in Sources */,
 				A10000000000000000000007 /* MainWorkflowView.swift in Sources */,
+				A1000000000000000000000B /* TranscriptEditorSheet.swift in Sources */,
+				A1000000000000000000000A /* StepAIClient.swift in Sources */,
 				A10000000000000000000004 /* DemoSession.swift in Sources */,
 				A10000000000000000000008 /* VoiceWorkflow.swift in Sources */,
 			);
@@ -215,6 +233,8 @@
 			files = (
 				A10000000000000000000005 /* DemoSessionTests.swift in Sources */,
 				A10000000000000000000009 /* VoiceWorkflowTests.swift in Sources */,
+				A1000000000000000000000C /* AIWorkflowResultTests.swift in Sources */,
+				A1000000000000000000000E /* PromptLabTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

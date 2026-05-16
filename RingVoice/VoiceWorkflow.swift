@@ -73,9 +73,71 @@ struct VoiceWorkflow {
         stage = .processed
     }
 
+    // 应用结果
+    mutating func applyAIResult(_ result: AIWorkflowResult) {
+        polishedText = result.polishedText
+        summary = result.summary
+        cards = result.cards.enumerated().map { index, card in
+            InsightCard(
+                id: index + 1,
+                intent: card.intent,
+                title: card.title,
+                detail: card.detail,
+                actionTitle: card.intent.actionTitle,
+                timeText: card.timeText
+            )
+        }
+        stage = .processed
+    }
+
     // 重置流程
     mutating func reset() {
         self = VoiceWorkflow()
     }
 }
 
+struct AIWorkflowResult: Decodable, Equatable {
+    let polishedText: String
+    let summary: String
+    let cards: [AICardResult]
+}
+
+struct AICardResult: Decodable, Equatable {
+    let intent: InsightIntent
+    let title: String
+    let detail: String
+    let timeText: String?
+}
+
+extension InsightIntent: Decodable {
+    // 意图解析
+    init(from decoder: Decoder) throws {
+        let value = try decoder.singleValueContainer().decode(String.self)
+
+        switch value {
+        case "TODO", "todo":
+            self = .todo
+        case "定时", "reminder":
+            self = .reminder
+        case "素材", "material":
+            self = .material
+        default:
+            throw DecodingError.dataCorrupted(
+                .init(codingPath: decoder.codingPath, debugDescription: "Unknown intent: \(value)")
+            )
+        }
+    }
+}
+
+private extension InsightIntent {
+    var actionTitle: String {
+        switch self {
+        case .todo:
+            "加入待办"
+        case .reminder:
+            "创建提醒"
+        case .material:
+            "收藏素材"
+        }
+    }
+}

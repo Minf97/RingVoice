@@ -25,6 +25,7 @@ struct DebugLabView: View {
                 statusView
                 actionView
                 resultView
+                PromptLabView()
                 eventLogView
             }
             .padding(18)

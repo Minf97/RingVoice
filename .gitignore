@@ -8,6 +8,8 @@ xcuserdata/
 .build/
 .swiftpm/
 
+# Local secrets
+.env
+
 # macOS
 .DS_Store
-

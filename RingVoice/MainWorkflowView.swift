@@ -7,15 +7,15 @@ import SwiftUI
 // Image 展示系统图标。Docs: https://developer.apple.com/documentation/swiftui/image
 // withAnimation 包裹状态动画。Docs: https://developer.apple.com/documentation/swiftui/withanimation(_:_:)
 // Sheet 弹出编辑面板。Docs: https://developer.apple.com/documentation/swiftui/view/sheet(ispresented:ondismiss:content:)
-// TextEditor 输入长文本。Docs: https://developer.apple.com/documentation/swiftui/texteditor
-// NavigationStack 承载导航页。Docs: https://developer.apple.com/documentation/swiftui/navigationstack
-// ToolbarItem 放置导航按钮。Docs: https://developer.apple.com/documentation/swiftui/toolbaritem
+// ProgressView 展示加载状态。Docs: https://developer.apple.com/documentation/swiftui/progressview
 
 struct MainWorkflowView: View {
     // API: @State 保存主链路状态，变化后自动刷新界面。
     // Docs: https://developer.apple.com/documentation/swiftui/state
     @State private var workflow = VoiceWorkflow()
     @State private var isEditorPresented = false
+    @State private var isGenerating = false
+    @State private var errorText: String?
 
     var body: some View {
         ScrollView {
@@ -71,10 +71,12 @@ struct MainWorkflowView: View {
             HStack(spacing: 10) {
                 primaryButton("模拟录音") {
                     workflow.loadSampleTranscript()
+                    errorText = nil
                 }
 
                 secondaryButton("重置") {
                     workflow.reset()
+                    errorText = nil
                 }
             }
         }
@@ -105,12 +107,24 @@ struct MainWorkflowView: View {
                 .background(Color(.secondarySystemGroupedBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
 
-            primaryButton("AI 总结成卡") {
-                withAnimation(.easeOut(duration: 0.22)) {
-                    workflow.generateInsights()
+            primaryButton(isGenerating ? "AI 处理中" : "AI 总结成卡") {
+                Task {
+                    await generateWithAI()
                 }
             }
-            .disabled(!workflow.canProcess)
+            .disabled(!workflow.canProcess || isGenerating)
+
+            if isGenerating {
+                ProgressView("正在调用阶跃 API")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            if let errorText {
+                Text(errorText)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
         }
         .padding(16)
         .background(.white)
@@ -248,30 +262,24 @@ struct MainWorkflowView: View {
             .foregroundStyle(isReady ? .green : .secondary)
             .clipShape(Capsule())
     }
-}
 
-struct TranscriptEditorSheet: View {
-    // API: @Environment 读取系统注入能力，这里用来关闭弹窗。
-    // Docs: https://developer.apple.com/documentation/swiftui/environment
-    @Environment(\.dismiss) private var dismiss
+    // 真实 AI
+    @MainActor
+    private func generateWithAI() async {
+        isGenerating = true
+        errorText = nil
 
-    // API: @Binding 接收父视图状态引用，编辑会同步回主页面。
-    // Docs: https://developer.apple.com/documentation/swiftui/binding
-    @Binding var transcript: String
+        do {
+            let client = try StepAIClient.fromEnvironment()
+            let result = try await client.generateInsights(from: workflow.transcript)
 
-    var body: some View {
-        NavigationStack {
-            TextEditor(text: $transcript)
-                .font(.body)
-                .padding()
-                .navigationTitle("编辑转写")
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("完成") {
-                            dismiss()
-                        }
-                    }
-                }
+            withAnimation(.easeOut(duration: 0.22)) {
+                workflow.applyAIResult(result)
+            }
+        } catch {
+            errorText = error.localizedDescription
         }
+
+        isGenerating = false
     }
 }
