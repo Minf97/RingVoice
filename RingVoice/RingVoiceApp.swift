@@ -5,7 +5,7 @@ import SwiftUI
 @main
 // API: SwiftUI.App 定义应用生命周期和首个场景。
 // Docs: https://developer.apple.com/documentation/swiftui/app
-struct HelloWorldApp: App {
+struct RingVoiceApp: App {
     var body: some Scene {
         // API: WindowGroup 创建应用主窗口，并承载根视图。
         // Docs: https://developer.apple.com/documentation/swiftui/windowgroup

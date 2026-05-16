@@ -1,18 +1,17 @@
-# iOS Hello World
+# RingVoice
 
-Minimal SwiftUI iOS boilerplate.
+SwiftUI iOS demo for a Bluetooth ring voice workflow.
 
 ## Run
 
-Open `HelloWorld.xcodeproj` in Xcode and run the `HelloWorld` scheme on an iOS Simulator.
+Open `RingVoice.xcodeproj` in Xcode and run the `RingVoice` scheme on an iOS Simulator.
 
 From the command line:
 
 ```sh
 DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild \
-  -project HelloWorld.xcodeproj \
-  -scheme HelloWorld \
+  -project RingVoice.xcodeproj \
+  -scheme RingVoice \
   -destination 'platform=iOS Simulator,name=iPhone 17' \
   build
 ```
-

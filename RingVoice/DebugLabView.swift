@@ -9,7 +9,7 @@ import SwiftUI
 
 // API: SwiftUI.View 定义界面声明入口。
 // Docs: https://developer.apple.com/documentation/swiftui/view
-struct ContentView: View {
+struct DebugLabView: View {
     // API: @State 保存本页本地状态，状态变化会触发界面刷新。
     // Docs: https://developer.apple.com/documentation/swiftui/state
     @State private var session = DemoSession()

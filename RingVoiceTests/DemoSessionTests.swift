@@ -1,5 +1,5 @@
 import XCTest
-@testable import HelloWorld
+@testable import RingVoice
 
 // API 索引:
 // XCTestCase 定义测试类。Docs: https://developer.apple.com/documentation/xctest/xctestcase
