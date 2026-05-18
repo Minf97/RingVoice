@@ -61,7 +61,7 @@ extension RingBluetoothSession {
 
     func handleReceived(_ data: Data) {
         guard let first = data.first else { return }
-        if first == 0xCA {
+        if first == 0xCA, data.count > 16 {
             handleAudioPacket(data)
             return
         }

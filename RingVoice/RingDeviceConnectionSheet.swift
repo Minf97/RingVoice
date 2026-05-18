@@ -5,6 +5,7 @@ struct RingDeviceConnectionSheet: View {
     let phaseText: String
     let isBusy: Bool
     let isConnected: Bool
+    let isSystemConnected: Bool
     let onConnect: () -> Void
     let onDismiss: () -> Void
 
@@ -128,12 +129,20 @@ struct RingDeviceConnectionSheet: View {
             return "已连接，等待按下戒指"
         }
 
+        if isSystemConnected {
+            return "系统已连接，点击接入 App"
+        }
+
         return phaseText
     }
 
     private var buttonTitle: String {
         if isConnected {
             return "已连接"
+        }
+
+        if isSystemConnected {
+            return "接入 App"
         }
 
         return isBusy ? "连接中" : "连接"

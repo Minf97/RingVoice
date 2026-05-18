@@ -5,6 +5,9 @@ extension RingBluetoothSession: CBCentralManagerDelegate {
     nonisolated func centralManagerDidUpdateState(_ central: CBCentralManager) {
         Task { @MainActor in
             events.append("蓝牙状态：\(central.state.ringText)")
+            if central.state == .poweredOn {
+                refreshSystemConnectedRing(from: central)
+            }
         }
     }
 
@@ -26,6 +29,7 @@ extension RingBluetoothSession: CBCentralManagerDelegate {
 
             if scanMode == .connectingRing {
                 central.stopScan()
+                scanMode = .browsing
                 connectPeripheral(peripheral, central: central)
             }
         }
@@ -58,6 +62,7 @@ extension RingBluetoothSession: CBCentralManagerDelegate {
         Task { @MainActor in
             phase = .disconnected
             connectionText = "断开"
+            connectedRingNotice = nil
             events.append("连接断开：\(error?.localizedDescription ?? "用户或设备断开")")
         }
     }
@@ -156,6 +161,7 @@ extension RingBluetoothSession: CBPeripheralDelegate {
         Task { @MainActor in
             if let error {
                 activeCommand = nil
+                pendingCommands = []
                 markFailed("写入失败：\(error.localizedDescription)")
                 return
             }

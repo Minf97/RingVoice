@@ -23,6 +23,7 @@ final class RingBluetoothSession: NSObject, ObservableObject {
     @Published var audioResult: AIWorkflowResult?
     @Published var events = ["等待真实蓝牙连接"]
     @Published var scannedDevices: [RingScannedDevice] = []
+    @Published var connectedRingNotice: String?
 
     static let serviceUUID = CBUUID(string: "FFF0")
     static let txUUID = CBUUID(string: "FFF6")
@@ -39,11 +40,12 @@ final class RingBluetoothSession: NSObject, ObservableObject {
     var audioFlushWorkItem: DispatchWorkItem?
 
     var canConnect: Bool {
-        phase == .disconnected || phase == .failed
+        phase == .disconnected || phase == .failed || phase == .connected || phase == .ready
     }
 
     var canScan: Bool {
         phase == .disconnected || phase == .failed || phase == .scanning
+            || phase == .connected || phase == .ready
     }
 
     var canStartRecording: Bool {
@@ -74,15 +76,19 @@ final class RingBluetoothSession: NSObject, ObservableObject {
             return
         }
 
-        guard centralManager.state == .poweredOn else {
-            markFailed("蓝牙不可用：\(centralManager.state.ringText)")
+        if phase == .scanning {
+            stopScan()
             return
         }
 
-        scannedDevices = []
-        discoveredPeripherals = [:]
-        scanMode = .browsing
-        phase = .scanning
+        guard warnIfAlreadyConnected() == false else { return }
+        guard ensureBluetoothPoweredOn(centralManager) else { return }
+
+        if refreshSystemConnectedRing(from: centralManager) != nil {
+            return
+        }
+
+        beginScan(mode: .browsing, central: centralManager)
         events.append("开始扫描有效设备：名称含 T3 或 Service FFF0")
         centralManager.scanForPeripherals(withServices: nil)
     }
@@ -103,12 +109,14 @@ final class RingBluetoothSession: NSObject, ObservableObject {
             return
         }
 
+        guard warnIfAlreadyConnected() == false else { return }
+        guard ensureBluetoothPoweredOn(centralManager) else { return }
+
         guard let target = discoveredPeripherals[id] else {
             markFailed("设备不存在或已过期")
             return
         }
 
-        scanMode = .connectingRing
         centralManager.stopScan()
         connectPeripheral(target, central: centralManager)
     }
@@ -120,14 +128,17 @@ final class RingBluetoothSession: NSObject, ObservableObject {
             return
         }
 
-        guard centralManager.state == .poweredOn else {
-            markFailed("蓝牙不可用：\(centralManager.state.ringText)")
+        guard warnIfAlreadyConnected() == false else { return }
+        guard ensureBluetoothPoweredOn(centralManager) else { return }
+
+        if let connected = refreshSystemConnectedRing(from: centralManager) {
+            events.append("戒指已连接，正在接入 App")
+            connectPeripheral(connected, central: centralManager)
             return
         }
 
-        scanMode = .connectingRing
+        beginScan(mode: .connectingRing, central: centralManager)
         events.append("开始扫描真实戒指：名称含 T3 或 Service FFF0")
-        phase = .scanning
         centralManager.scanForPeripherals(withServices: nil)
     }
 
@@ -143,6 +154,7 @@ final class RingBluetoothSession: NSObject, ObservableObject {
         activeCommand = nil
         discoveredPeripherals = [:]
         scannedDevices = []
+        connectedRingNotice = nil
         scanMode = .browsing
         audioQueue = RingAudioBufferQueue()
         audioFlushWorkItem?.cancel()
@@ -185,6 +197,8 @@ final class RingBluetoothSession: NSObject, ObservableObject {
     }
 
     func connectPeripheral(_ peripheral: CBPeripheral, central: CBCentralManager) {
+        resetConnectionRuntime()
+        scanMode = .browsing
         self.peripheral = peripheral
         peripheral.delegate = self
         phase = .connecting

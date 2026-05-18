@@ -1,14 +1,5 @@
 import SwiftUI
 
-// API 索引:
-// Text 显示文字。Docs: https://developer.apple.com/documentation/swiftui/text
-// Color 设置颜色。Docs: https://developer.apple.com/documentation/swiftui/color
-// ForEach 渲染集合。Docs: https://developer.apple.com/documentation/swiftui/foreach
-// RoundedRectangle 绘制圆角背景。Docs: https://developer.apple.com/documentation/swiftui/roundedrectangle
-// View modifiers 调整样式。Docs: https://developer.apple.com/documentation/swiftui/view
-
-// API: SwiftUI.View 定义界面声明入口。
-// Docs: https://developer.apple.com/documentation/swiftui/view
 struct DebugLabView: View {
     @ObservedObject var session: RingBluetoothSession
 
@@ -43,8 +34,6 @@ struct DebugLabView: View {
             Text("设备状态")
                 .font(.headline)
 
-            // API: HStack 横向排列状态信息。
-            // Docs: https://developer.apple.com/documentation/swiftui/hstack
             HStack(spacing: 12) {
                 statusPill(title: "连接", value: session.connectionText)
                 statusPill(title: "阶段", value: session.phase.rawValue)
@@ -54,6 +43,13 @@ struct DebugLabView: View {
             HStack(spacing: 12) {
                 metricView(title: "音频包", value: "\(session.packetCount)")
                 metricView(title: "震动", value: session.didVibrate ? "已触发" : "未触发")
+            }
+
+            if let notice = session.connectedRingNotice {
+                Text(notice)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.green)
             }
         }
         .padding(16)
@@ -109,21 +105,15 @@ struct DebugLabView: View {
 
                 Spacer()
 
-                Button("扫描") {
+                Button(scanButtonTitle) {
                     session.scanDevices()
                 }
                 .buttonStyle(.bordered)
                 .disabled(!session.canScan)
-
-                Button("停止") {
-                    session.stopScan()
-                }
-                .buttonStyle(.bordered)
-                .disabled(session.phase != .scanning)
             }
 
             if session.scannedDevices.isEmpty {
-                Text("点击扫描后只显示名称含 T3 或广播 FFF0 的设备。")
+                Text(scanEmptyText)
                     .font(.body)
                     .foregroundStyle(.secondary)
             } else {
@@ -142,11 +132,11 @@ struct DebugLabView: View {
 
                         Spacer()
 
-                        Button("连接") {
+                        Button(deviceButtonTitle) {
                             session.connectDevice(id: device.id)
                         }
                         .buttonStyle(.borderedProminent)
-                        .disabled(session.phase == .connecting || session.phase == .discovering)
+                        .disabled(session.phase.isConnectingLike || session.phase.isConnectedLike)
                     }
                     .padding(10)
                     .background(Color(.secondarySystemGroupedBackground))
@@ -157,6 +147,30 @@ struct DebugLabView: View {
         .padding(16)
         .background(.white)
         .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var scanButtonTitle: String {
+        session.phase == .scanning ? "停止" : "扫描"
+    }
+
+    private var scanEmptyText: String {
+        if let notice = session.connectedRingNotice {
+            return "\(notice)。点击“连接戒指”可接入 App。"
+        }
+
+        if session.phase == .scanning {
+            return "未发现有效戒指。请确认戒指已开机、靠近手机，并且未被其他手机连接。"
+        }
+
+        if session.phase.isConnectedLike {
+            return "戒指已连接。iOS 上已连接的 BLE 外设不一定继续广播。"
+        }
+
+        return "点击扫描后只显示名称含 T3 或广播 FFF0 的设备。"
+    }
+
+    private var deviceButtonTitle: String {
+        session.connectedRingNotice == nil ? "连接" : "接入 App"
     }
 
     private var resultView: some View {
@@ -216,8 +230,6 @@ struct DebugLabView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            // API: ForEach 遍历日志数组，并为每条日志生成 Text。
-            // Docs: https://developer.apple.com/documentation/swiftui/foreach
             ForEach(Array(session.events.enumerated()), id: \.offset) { index, item in
                 HStack(alignment: .top, spacing: 8) {
                     Text(String(format: "%02d", index + 1))
@@ -274,8 +286,6 @@ struct DebugLabView: View {
         enabled: Bool,
         action: @escaping () -> Void
     ) -> some View {
-        // API: Button 响应用户点击，触发本地状态变更。
-        // Docs: https://developer.apple.com/documentation/swiftui/button
         Button(action: action) {
             Text(title)
                 .font(.subheadline)

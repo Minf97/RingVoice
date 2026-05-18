@@ -30,8 +30,9 @@ struct ContentView: View {
                 RingDeviceConnectionSheet(
                     device: device,
                     phaseText: session.phase.rawValue,
-                    isBusy: session.phase == .connecting || session.phase == .discovering,
-                    isConnected: session.phase == .connected,
+                    isBusy: session.phase.isConnectingLike,
+                    isConnected: session.phase.isConnectedLike,
+                    isSystemConnected: session.connectedRingNotice != nil,
                     onConnect: {
                         session.connectDevice(id: device.id)
                     },
@@ -47,6 +48,8 @@ struct ContentView: View {
     }
 
     private var connectionSheetDevice: RingScannedDevice? {
+        guard session.phase.isConnectedLike == false else { return nil }
+        guard session.phase.isConnectingLike == false else { return nil }
         guard let device = session.scannedDevices.first else { return nil }
         return dismissedSheetDeviceID == device.id ? nil : device
     }
