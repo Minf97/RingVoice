@@ -78,8 +78,8 @@ struct DemoSession {
     // AI 分类
     mutating func processAI() {
         phase = .processing
-        events.append("上传音频成功：WAV")
-        events.append("语音转文字成功")
+        events.append("发送音频 AI 成功：WAV")
+        events.append("音频理解成功")
         polishedText = "明天下午三点提醒我给客户发送方案。"
         intent = .reminder
         reminderText = "明天 15:00"

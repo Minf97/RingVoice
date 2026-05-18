@@ -169,8 +169,28 @@ struct DebugLabView: View {
                     .font(.title3)
                     .fontWeight(.semibold)
 
-                Text("当前收到 \(session.packetCount) 个音频包；下一步可把 PCM 缓存接入 WAV 和 STT。")
+                Text("当前收到 \(session.packetCount) 个音频包；点击 AI 处理会先生成 WAV，再交给音频模型整理。")
                     .font(.body)
+
+                if session.audioTranscript.isEmpty == false {
+                    Text(session.audioTranscript)
+                        .font(.body)
+                        .foregroundStyle(.primary)
+                }
+
+                if let result = session.audioResult {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(result.summary)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+
+                        ForEach(Array(result.cards.enumerated()), id: \.offset) { _, card in
+                            Text("\(card.intent.rawValue)：\(card.title)")
+                                .font(.footnote)
+                                .foregroundStyle(.primary)
+                        }
+                    }
+                }
 
                 HStack(spacing: 8) {
                     statusPill(title: "来源", value: "RX FFF7")

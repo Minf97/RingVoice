@@ -32,4 +32,52 @@ final class AIWorkflowResultTests: XCTestCase {
         XCTAssertEqual(result.cards.first?.intent, .reminder)
         XCTAssertEqual(result.cards.last?.intent, .todo)
     }
+
+    // 音频编码
+    func testStepAudioClientBuildsWAVDataURI() {
+        let uri = StepAudioAIClient.wavDataURI(Data([0x52, 0x49]))
+
+        XCTAssertTrue(uri.hasPrefix("data:audio/wav;base64,"))
+        XCTAssertTrue(uri.hasSuffix("Ukk="))
+    }
+
+    // 直接 JSON
+    func testStepAudioClientDecodesRawJSON() throws {
+        let result = try StepAudioAIClient.decodeResult(from: """
+        {"polishedText":"记录明天开会","summary":"会议提醒","cards":[]}
+        """)
+
+        XCTAssertEqual(result.polishedText, "记录明天开会")
+        XCTAssertTrue(result.cards.isEmpty)
+    }
+
+    // 包裹 JSON
+    func testStepAudioClientExtractsWrappedJSON() throws {
+        let result = try StepAudioAIClient.decodeResult(from: """
+        result:
+        {"polishedText":"整理客户材料","summary":"材料整理","cards":[]}
+        """)
+
+        XCTAssertEqual(result.summary, "材料整理")
+    }
+
+    // 音频响应
+    func testStepAudioClientReadsAudioTranscript() throws {
+        let response = """
+        {"choices":[{"message":{"content":"","audio":{"transcript":"{\\"polishedText\\":\\"记录想法\\",\\"summary\\":\\"一个想法\\",\\"cards\\":[]}"}}}]}
+        """
+
+        let data = try XCTUnwrap(response.data(using: .utf8))
+        let content = try StepAudioAIClient.decodeContentEnvelope(from: data)
+        let result = try StepAudioAIClient.decodeResult(from: content)
+
+        XCTAssertEqual(result.polishedText, "记录想法")
+    }
+
+    // 格式错误
+    func testStepAudioClientRejectsInvalidJSON() {
+        XCTAssertThrowsError(try StepAudioAIClient.decodeResult(from: "not json")) { error in
+            XCTAssertTrue(error is StepAudioAIClientError)
+        }
+    }
 }

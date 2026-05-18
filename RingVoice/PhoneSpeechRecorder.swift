@@ -1,5 +1,5 @@
 import AVFoundation
-import Speech
+import Foundation
 
 enum PhoneRecordingPhase: Equatable {
     case idle
@@ -13,24 +13,21 @@ enum PhoneRecordingPhase: Equatable {
 }
 
 enum PhoneRecorderError: LocalizedError {
-    case speechUnavailable
     case permissionDenied(String)
     case alreadyRecording
     case notRecording
-    case emptyTranscript
+    case recordingFailed(String)
 
     var errorDescription: String? {
         switch self {
-        case .speechUnavailable:
-            "当前设备不可用语音识别"
         case .permissionDenied(let name):
             "\(name)权限未开启"
         case .alreadyRecording:
             "录音已经开始"
         case .notRecording:
             "当前没有录音"
-        case .emptyTranscript:
-            "没有识别到语音内容"
+        case .recordingFailed(let message):
+            message
         }
     }
 }
@@ -38,12 +35,9 @@ enum PhoneRecorderError: LocalizedError {
 @MainActor
 final class PhoneSpeechRecorder: NSObject, ObservableObject {
     @Published private(set) var phase: PhoneRecordingPhase = .idle
-    @Published private(set) var transcript = ""
 
-    private let audioEngine = AVAudioEngine()
-    private let speechRecognizer = SFSpeechRecognizer(locale: Locale(identifier: "zh-CN"))
-    private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
-    private var recognitionTask: SFSpeechRecognitionTask?
+    private var audioRecorder: AVAudioRecorder?
+    private var recordingURL: URL?
 
     // 开始录音
     func start() async throws {
@@ -51,66 +45,42 @@ final class PhoneSpeechRecorder: NSObject, ObservableObject {
             throw PhoneRecorderError.alreadyRecording
         }
 
-        try await authorize()
+        try await authorizeMicrophone()
 
-        guard let speechRecognizer, speechRecognizer.isAvailable else {
-            throw PhoneRecorderError.speechUnavailable
+        do {
+            try configureAudioSession()
+            try prepareRecorder()
+            phase = .recording
+        } catch {
+            cleanupRecording()
+            phase = .failed(error.localizedDescription)
+            throw error
         }
-
-        transcript = ""
-        phase = .recording
-        recognitionTask?.cancel()
-        recognitionTask = nil
-
-        let request = SFSpeechAudioBufferRecognitionRequest()
-        request.shouldReportPartialResults = true
-        recognitionRequest = request
-
-        try configureAudioSession()
-        installAudioTap(request: request)
-        startRecognition(speechRecognizer: speechRecognizer, request: request)
-
-        audioEngine.prepare()
-        try audioEngine.start()
     }
 
     // 结束录音
-    func stop() throws -> String {
-        guard audioEngine.isRunning else {
+    func stop() async throws -> Data {
+        guard let audioRecorder else {
             throw PhoneRecorderError.notRecording
         }
 
-        audioEngine.stop()
-        audioEngine.inputNode.removeTap(onBus: 0)
-        recognitionRequest?.endAudio()
-        recognitionTask?.finish()
+        audioRecorder.stop()
+        let url = recordingURL
+        audioRecorderDelete()
+        phase = .idle
         try AVAudioSession.sharedInstance().setActive(false)
 
-        recognitionRequest = nil
-        recognitionTask = nil
-
-        let text = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard text.isEmpty == false else {
-            phase = .idle
-            throw PhoneRecorderError.emptyTranscript
+        guard let url else {
+            throw PhoneRecorderError.recordingFailed("录音文件缺失")
         }
 
+        let audioData = try Data(contentsOf: url)
         phase = .finished
-        return text
+        return audioData
     }
 
     // 请求权限
-    private func authorize() async throws {
-        let speechStatus = await withCheckedContinuation { continuation in
-            SFSpeechRecognizer.requestAuthorization { status in
-                continuation.resume(returning: status)
-            }
-        }
-
-        guard speechStatus == .authorized else {
-            throw PhoneRecorderError.permissionDenied("语音识别")
-        }
-
+    private func authorizeMicrophone() async throws {
         let microphoneGranted = await withCheckedContinuation { continuation in
             AVAudioApplication.requestRecordPermission { isGranted in
                 continuation.resume(returning: isGranted)
@@ -125,35 +95,51 @@ final class PhoneSpeechRecorder: NSObject, ObservableObject {
     // 音频会话
     private func configureAudioSession() throws {
         let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(.record, mode: .measurement, options: .duckOthers)
+        try audioSession.setCategory(.record, mode: .default, options: [.duckOthers])
         try audioSession.setActive(true)
     }
 
-    // 安装采集
-    private func installAudioTap(request: SFSpeechAudioBufferRecognitionRequest) {
-        let inputNode = audioEngine.inputNode
-        let format = inputNode.outputFormat(forBus: 0)
-        inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: 1_024, format: format) { buffer, _ in
-            request.append(buffer)
+    // 准备录音
+    private func prepareRecorder() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ringvoice-phone-\(UUID().uuidString).wav")
+        let settings: [String: Any] = [
+            AVFormatIDKey: Int(kAudioFormatLinearPCM),
+            AVSampleRateKey: 16_000,
+            AVNumberOfChannelsKey: 1,
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsFloatKey: false,
+            AVLinearPCMIsBigEndianKey: false
+        ]
+
+        let recorder = try AVAudioRecorder(url: url, settings: settings)
+        recorder.isMeteringEnabled = false
+        guard recorder.record() else {
+            try AVAudioSession.sharedInstance().setActive(false)
+            throw PhoneRecorderError.recordingFailed("无法启动录音")
+        }
+
+        audioRecorder = recorder
+        recordingURL = url
+    }
+
+    // 清理资源
+    private func cleanupRecording(keepFileURL: Bool) {
+        audioRecorder?.stop()
+        audioRecorder = nil
+        if keepFileURL == false {
+            recordingURL = nil
         }
     }
 
-    // 实时转写
-    private func startRecognition(
-        speechRecognizer: SFSpeechRecognizer,
-        request: SFSpeechAudioBufferRecognitionRequest
-    ) {
-        recognitionTask = speechRecognizer.recognitionTask(with: request) { [weak self] result, error in
-            Task { @MainActor [weak self] in
-                if let result {
-                    self?.transcript = result.bestTranscription.formattedString
-                }
+    // 清理资源
+    private func cleanupRecording() {
+        cleanupRecording(keepFileURL: false)
+    }
 
-                if let error, self?.phase == .recording {
-                    self?.phase = .failed(error.localizedDescription)
-                }
-            }
-        }
+    // 清空引用
+    private func audioRecorderDelete() {
+        audioRecorder = nil
+        recordingURL = nil
     }
 }

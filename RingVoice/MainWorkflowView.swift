@@ -143,7 +143,7 @@ struct MainWorkflowView: View {
         }
 
         if recorder.phase.isRecording {
-            return recorder.transcript.isEmpty ? "正在听你说话" : recorder.transcript
+            return "正在听你说话"
         }
 
         if isGenerating {
@@ -189,10 +189,13 @@ struct MainWorkflowView: View {
     }
 
     // 录音切换
+    @MainActor
     private func toggleRecording() {
-        Task {
+        let isRecording = recorder.phase.isRecording
+
+        Task { @MainActor in
             do {
-                if recorder.phase.isRecording {
+                if isRecording {
                     try await finishPhoneRecording()
                 } else {
                     try await startPhoneRecording()
@@ -214,21 +217,21 @@ struct MainWorkflowView: View {
     // 手机结束
     @MainActor
     private func finishPhoneRecording() async throws {
-        let transcript = try recorder.stop()
-        workflow.setTranscript(transcript)
-        try await generateWithAI()
+        let audioData = try await recorder.stop()
+        try await generateWithAudioAI(wavData: audioData)
     }
 
-    // AI 处理
+    // 音频处理
     @MainActor
-    private func generateWithAI() async throws {
+    private func generateWithAudioAI(wavData: Data) async throws {
         isGenerating = true
         defer { isGenerating = false }
 
-        let client = try StepAIClient.fromEnvironment()
-        let result = try await client.generateInsights(from: workflow.transcript)
+        let client = try StepAudioAIClient.fromEnvironment()
+        let result = try await client.generateInsights(fromWAVData: wavData)
 
         withAnimation(.easeOut(duration: 0.22)) {
+            workflow.setTranscript(result.polishedText)
             workflow.applyAIResult(result)
         }
     }

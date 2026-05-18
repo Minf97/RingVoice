@@ -19,6 +19,8 @@ final class RingBluetoothSession: NSObject, ObservableObject {
     @Published var connectionText = "断开"
     @Published var packetCount = 0
     @Published var didVibrate = false
+    @Published var audioTranscript = ""
+    @Published var audioResult: AIWorkflowResult?
     @Published var events = ["等待真实蓝牙连接"]
     @Published var scannedDevices: [RingScannedDevice] = []
 
@@ -33,6 +35,8 @@ final class RingBluetoothSession: NSObject, ObservableObject {
     var activeCommand: RingBluetoothCommand?
     var discoveredPeripherals: [UUID: CBPeripheral] = [:]
     var scanMode: RingScanMode = .browsing
+    var audioQueue = RingAudioBufferQueue()
+    var audioFlushWorkItem: DispatchWorkItem?
 
     var canConnect: Bool {
         phase == .disconnected || phase == .failed
@@ -127,35 +131,6 @@ final class RingBluetoothSession: NSObject, ObservableObject {
         centralManager.scanForPeripherals(withServices: nil)
     }
 
-    // 开始录音
-    func startRecording() {
-        enqueue([RingBluetoothCommands.startAudio])
-    }
-
-    // 等待音频
-    func waitForAudio() {
-        guard phase == .recording || phase == .receiving else {
-            events.append("未进入录音状态，不能接收音频")
-            return
-        }
-
-        events.append("等待 RX FFF7 推送音频包")
-    }
-
-    // 结束录音
-    func finishRecording() {
-        enqueue([
-            RingBluetoothCommands.stopAudio,
-            RingBluetoothCommands.vibrate200ms
-        ])
-    }
-
-    // AI 处理
-    func processAI() {
-        events.append("已收到真实音频包：\(packetCount) 个")
-        events.append("WAV/STT 链路待接入真实音频缓存")
-    }
-
     // 重置连接
     func reset() {
         if let peripheral {
@@ -169,8 +144,13 @@ final class RingBluetoothSession: NSObject, ObservableObject {
         discoveredPeripherals = [:]
         scannedDevices = []
         scanMode = .browsing
+        audioQueue = RingAudioBufferQueue()
+        audioFlushWorkItem?.cancel()
+        audioFlushWorkItem = nil
         packetCount = 0
         didVibrate = false
+        audioTranscript = ""
+        audioResult = nil
         phase = .disconnected
         connectionText = "断开"
         events = ["等待真实蓝牙连接"]
@@ -260,28 +240,6 @@ final class RingBluetoothSession: NSObject, ObservableObject {
         case .vibrate:
             didVibrate = true
             events.append("震动指令已确认")
-        }
-    }
-
-    func handleReceived(_ data: Data) {
-        events.append("接收 RX：\(data.ringHexText)")
-
-        guard let first = data.first else { return }
-        if first == 0xCA {
-            packetCount += 1
-            phase = .receiving
-            events.append("真实音频包 +1，总数 \(packetCount)")
-            return
-        }
-
-        guard data.count > 1, first == 0xC9 else { return }
-        let code = data[data.index(data.startIndex, offsetBy: 1)]
-        if code == 0x03 {
-            phase = .recording
-            events.append("戒指确认开始录音：0xC9 03")
-        } else if code == 0x04 {
-            phase = .ready
-            events.append("戒指确认音频结束：0xC9 04")
         }
     }
 

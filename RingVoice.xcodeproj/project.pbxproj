@@ -22,6 +22,12 @@
 		A1000000000000000000000D /* PromptLabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001E /* PromptLabView.swift */; };
 		A1000000000000000000000E /* PromptLabTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000001F /* PromptLabTests.swift */; };
 		A1000000000000000000000F /* PhoneSpeechRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022 /* PhoneSpeechRecorder.swift */; };
+		A10000000000000000000042 /* RingAudioBufferQueue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000029 /* RingAudioBufferQueue.swift */; };
+		A10000000000000000000043 /* RingBluetoothSession+Audio.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002A /* RingBluetoothSession+Audio.swift */; };
+		A10000000000000000000044 /* RingAudioBufferQueueTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002B /* RingAudioBufferQueueTests.swift */; };
+		A10000000000000000000045 /* PhoneSpeechRecorderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002C /* PhoneSpeechRecorderTests.swift */; };
+		A10000000000000000000046 /* RingWAVEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002D /* RingWAVEncoder.swift */; };
+		A10000000000000000000048 /* StepAudioAIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000002F /* StepAudioAIClient.swift */; };
 		A10000000000000000000034 /* RingBluetoothCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000023 /* RingBluetoothCommands.swift */; };
 		A10000000000000000000035 /* RingBluetoothSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024 /* RingBluetoothSession.swift */; };
 		A10000000000000000000036 /* RingBluetoothSession+Delegates.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000025 /* RingBluetoothSession+Delegates.swift */; };
@@ -64,6 +70,12 @@
 		A10000000000000000000026 /* RingBluetoothCommandsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RingBluetoothCommandsTests.swift; sourceTree = "<group>"; };
 		A10000000000000000000027 /* RingScannedDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RingScannedDevice.swift; sourceTree = "<group>"; };
 		A10000000000000000000028 /* RingDeviceConnectionSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RingDeviceConnectionSheet.swift; sourceTree = "<group>"; };
+		A10000000000000000000029 /* RingAudioBufferQueue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RingAudioBufferQueue.swift; sourceTree = "<group>"; };
+		A1000000000000000000002A /* RingBluetoothSession+Audio.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RingBluetoothSession+Audio.swift"; sourceTree = "<group>"; };
+		A1000000000000000000002B /* RingAudioBufferQueueTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RingAudioBufferQueueTests.swift; sourceTree = "<group>"; };
+		A1000000000000000000002C /* PhoneSpeechRecorderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSpeechRecorderTests.swift; sourceTree = "<group>"; };
+		A1000000000000000000002D /* RingWAVEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RingWAVEncoder.swift; sourceTree = "<group>"; };
+		A1000000000000000000002F /* StepAudioAIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StepAudioAIClient.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -103,12 +115,16 @@
 				A10000000000000000000018 /* MainWorkflowView.swift */,
 				A1000000000000000000001C /* TranscriptEditorSheet.swift */,
 				A1000000000000000000001B /* StepAIClient.swift */,
+				A1000000000000000000002F /* StepAudioAIClient.swift */,
 				A10000000000000000000022 /* PhoneSpeechRecorder.swift */,
+				A10000000000000000000029 /* RingAudioBufferQueue.swift */,
+				A1000000000000000000002D /* RingWAVEncoder.swift */,
 				A10000000000000000000023 /* RingBluetoothCommands.swift */,
 				A10000000000000000000027 /* RingScannedDevice.swift */,
 				A10000000000000000000028 /* RingDeviceConnectionSheet.swift */,
 				A10000000000000000000024 /* RingBluetoothSession.swift */,
 				A10000000000000000000025 /* RingBluetoothSession+Delegates.swift */,
+				A1000000000000000000002A /* RingBluetoothSession+Audio.swift */,
 				A10000000000000000000014 /* DemoSession.swift */,
 				A10000000000000000000019 /* VoiceWorkflow.swift */,
 				A10000000000000000000013 /* Assets.xcassets */,
@@ -133,6 +149,8 @@
 				A1000000000000000000001D /* AIWorkflowResultTests.swift */,
 				A1000000000000000000001F /* PromptLabTests.swift */,
 				A10000000000000000000026 /* RingBluetoothCommandsTests.swift */,
+				A1000000000000000000002B /* RingAudioBufferQueueTests.swift */,
+				A1000000000000000000002C /* PhoneSpeechRecorderTests.swift */,
 			);
 			path = RingVoiceTests;
 			sourceTree = "<group>";
@@ -243,12 +261,16 @@
 				A10000000000000000000007 /* MainWorkflowView.swift in Sources */,
 				A1000000000000000000000B /* TranscriptEditorSheet.swift in Sources */,
 				A1000000000000000000000A /* StepAIClient.swift in Sources */,
+				A10000000000000000000048 /* StepAudioAIClient.swift in Sources */,
 				A1000000000000000000000F /* PhoneSpeechRecorder.swift in Sources */,
+				A10000000000000000000042 /* RingAudioBufferQueue.swift in Sources */,
+				A10000000000000000000046 /* RingWAVEncoder.swift in Sources */,
 				A10000000000000000000034 /* RingBluetoothCommands.swift in Sources */,
 				A10000000000000000000038 /* RingScannedDevice.swift in Sources */,
 				A10000000000000000000039 /* RingDeviceConnectionSheet.swift in Sources */,
 				A10000000000000000000035 /* RingBluetoothSession.swift in Sources */,
 				A10000000000000000000036 /* RingBluetoothSession+Delegates.swift in Sources */,
+				A10000000000000000000043 /* RingBluetoothSession+Audio.swift in Sources */,
 				A10000000000000000000004 /* DemoSession.swift in Sources */,
 				A10000000000000000000008 /* VoiceWorkflow.swift in Sources */,
 			);
@@ -263,6 +285,8 @@
 				A1000000000000000000000C /* AIWorkflowResultTests.swift in Sources */,
 				A1000000000000000000000E /* PromptLabTests.swift in Sources */,
 				A10000000000000000000037 /* RingBluetoothCommandsTests.swift in Sources */,
+				A10000000000000000000044 /* RingAudioBufferQueueTests.swift in Sources */,
+				A10000000000000000000045 /* PhoneSpeechRecorderTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -408,7 +432,6 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "用于连接蓝牙戒指并接收语音数据";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "用于手机录音并生成索引卡";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "用于将手机录音转写成文本";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -440,7 +463,6 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "用于连接蓝牙戒指并接收语音数据";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "用于手机录音并生成索引卡";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "用于将手机录音转写成文本";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
