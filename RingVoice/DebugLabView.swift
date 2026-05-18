@@ -10,16 +10,10 @@ import SwiftUI
 // API: SwiftUI.View 定义界面声明入口。
 // Docs: https://developer.apple.com/documentation/swiftui/view
 struct DebugLabView: View {
-    // API: @StateObject 持有蓝牙会话，回调变化会刷新界面。
-    // Docs: https://developer.apple.com/documentation/swiftui/stateobject
-    @StateObject private var session = RingBluetoothSession()
+    @ObservedObject var session: RingBluetoothSession
 
     var body: some View {
-        // API: ScrollView 让页面内容可滚动，适合手机小屏展示工作台。
-        // Docs: https://developer.apple.com/documentation/swiftui/scrollview
         ScrollView {
-            // API: VStack 纵向排列多个区域。
-            // Docs: https://developer.apple.com/documentation/swiftui/vstack
             VStack(alignment: .leading, spacing: 16) {
                 headerView
                 statusView
@@ -29,7 +23,6 @@ struct DebugLabView: View {
                 resultView
                 PromptLabView()
             }
-            .padding(18)
         }
         .background(Color(.systemGroupedBackground))
     }
