@@ -10,9 +10,9 @@ import SwiftUI
 // API: SwiftUI.View 定义界面声明入口。
 // Docs: https://developer.apple.com/documentation/swiftui/view
 struct DebugLabView: View {
-    // API: @State 保存本页本地状态，状态变化会触发界面刷新。
-    // Docs: https://developer.apple.com/documentation/swiftui/state
-    @State private var session = DemoSession()
+    // API: @StateObject 持有蓝牙会话，回调变化会刷新界面。
+    // Docs: https://developer.apple.com/documentation/swiftui/stateobject
+    @StateObject private var session = RingBluetoothSession()
 
     var body: some View {
         // API: ScrollView 让页面内容可滚动，适合手机小屏展示工作台。
@@ -23,10 +23,11 @@ struct DebugLabView: View {
             VStack(alignment: .leading, spacing: 16) {
                 headerView
                 statusView
+                scanView
                 actionView
+                eventLogView
                 resultView
                 PromptLabView()
-                eventLogView
             }
             .padding(18)
         }
@@ -38,7 +39,7 @@ struct DebugLabView: View {
             Text("Ring Voice Demo")
                 .font(.system(size: 30, weight: .bold))
 
-            Text("先用本地状态模拟蓝牙戒指、录音、AI 分类和提醒创建。")
+            Text("连接真实蓝牙戒指，记录扫描、连接、写入和 RX 回调。")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
@@ -54,7 +55,7 @@ struct DebugLabView: View {
             HStack(spacing: 12) {
                 statusPill(title: "连接", value: session.connectionText)
                 statusPill(title: "阶段", value: session.phase.rawValue)
-                statusPill(title: "电量", value: "\(session.battery)%")
+                statusPill(title: "电量", value: "--")
             }
 
             HStack(spacing: 12) {
@@ -69,7 +70,7 @@ struct DebugLabView: View {
 
     private var actionView: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("模拟链路")
+            Text("真实链路")
                 .font(.headline)
 
             HStack(spacing: 10) {
@@ -84,7 +85,7 @@ struct DebugLabView: View {
 
             HStack(spacing: 10) {
                 actionButton("接收音频", enabled: session.canReceiveAudio) {
-                    session.receiveAudioPackets()
+                    session.waitForAudio()
                 }
 
                 actionButton("结束录音", enabled: session.canFinishRecording) {
@@ -107,25 +108,83 @@ struct DebugLabView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
+    private var scanView: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("蓝牙扫描")
+                    .font(.headline)
+
+                Spacer()
+
+                Button("扫描") {
+                    session.scanDevices()
+                }
+                .buttonStyle(.bordered)
+                .disabled(!session.canScan)
+
+                Button("停止") {
+                    session.stopScan()
+                }
+                .buttonStyle(.bordered)
+                .disabled(session.phase != .scanning)
+            }
+
+            if session.scannedDevices.isEmpty {
+                Text("点击扫描后只显示名称含 T3 或广播 FFF0 的设备。")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(session.scannedDevices) { device in
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(device.name)
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+
+                            Text("RSSI \(device.rssi) · Services \(device.serviceText)")
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
+
+                        Spacer()
+
+                        Button("连接") {
+                            session.connectDevice(id: device.id)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .disabled(session.phase == .connecting || session.phase == .discovering)
+                    }
+                    .padding(10)
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+        }
+        .padding(16)
+        .background(.white)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
     private var resultView: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("结果卡片")
                 .font(.headline)
 
-            if session.phase == .ready {
-                Text(session.resultTitle)
+            if session.canProcessAI {
+                Text("已接收真实音频")
                     .font(.title3)
                     .fontWeight(.semibold)
 
-                Text(session.polishedText)
+                Text("当前收到 \(session.packetCount) 个音频包；下一步可把 PCM 缓存接入 WAV 和 STT。")
                     .font(.body)
 
                 HStack(spacing: 8) {
-                    statusPill(title: "意图", value: session.intent.rawValue)
-                    statusPill(title: "提醒", value: session.reminderText)
+                    statusPill(title: "来源", value: "RX FFF7")
+                    statusPill(title: "状态", value: session.phase.rawValue)
                 }
             } else {
-                Text("完成 AI 处理后，这里会展示润色文本和意图分类。")
+                Text("收到真实音频包后，这里会展示可处理状态。")
                     .font(.body)
                     .foregroundStyle(.secondary)
             }
@@ -137,15 +196,27 @@ struct DebugLabView: View {
 
     private var eventLogView: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("数据流日志")
+            Text("链路日志")
                 .font(.headline)
+
+            Text("日志来自 CoreBluetooth 回调和真实 TX/RX 数据。")
+                .font(.caption)
+                .foregroundStyle(.secondary)
 
             // API: ForEach 遍历日志数组，并为每条日志生成 Text。
             // Docs: https://developer.apple.com/documentation/swiftui/foreach
-            ForEach(session.events, id: \.self) { item in
-                Text(item)
-                    .font(.footnote.monospaced())
-                    .foregroundStyle(.secondary)
+            ForEach(Array(session.events.enumerated()), id: \.offset) { index, item in
+                HStack(alignment: .top, spacing: 8) {
+                    Text(String(format: "%02d", index + 1))
+                        .font(.caption.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .frame(width: 24, alignment: .leading)
+
+                    Text(item)
+                        .font(.footnote.monospaced())
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
             }
         }
         .padding(16)

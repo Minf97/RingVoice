@@ -22,7 +22,7 @@ struct DemoSession {
     var resultTitle = "给客户发送方案"
     var polishedText = ""
     var reminderText = "未创建"
-    var events = ["等待连接蓝牙戒指"]
+    var events = ["准备模拟链路"]
 
     var connectionText: String {
         phase == .disconnected ? "断开" : "T3 Ring"
@@ -37,10 +37,13 @@ struct DemoSession {
     // 状态连接
     mutating func connect() {
         phase = .connected
-        events.append("扫描 0xFFF0 并连接成功")
-        events.append("订阅 RX 0xFFF7")
-        events.append("写入 TX 0x4A 01 00 关闭压缩")
-        events.append("写入 TX 0x1C CC=4 切录音模式")
+        events.append("搜索蓝牙设备成功：发现 T3 Ring")
+        events.append("发送配对指令成功：TX 0x01 PAIR_REQ")
+        events.append("接收配对信息成功：RX 0x81 PAIR_ACK")
+        events.append("确认配对成功：T3 Ring 已连接")
+        events.append("订阅音频通道成功：RX 0xFFF7")
+        events.append("设置传输成功：TX 0x4A 01 00")
+        events.append("切换模式成功：TX 0x1C CC=4")
     }
 
     // 开始录音
@@ -48,36 +51,42 @@ struct DemoSession {
         phase = .recording
         packetCount = 0
         didVibrate = false
-        events.append("收到 0xC9 AA=3 开始录音")
+        events.append("发送录音准备成功：TX 0xC9 01")
+        events.append("接收按键信号成功：RX 0xC9 AA=3")
+        events.append("确认录音开始成功")
     }
 
     // 接收音频
     mutating func receiveAudioPackets() {
         packetCount += 18
         phase = .received
-        events.append("接收 PCM 音频包 18 个")
-        events.append("组装 16kHz 单声道 WAV")
+        events.append("接收音频包成功：PCM x18")
+        events.append("校验音频序号成功：无丢包")
+        events.append("组装音频成功：16kHz 单声道 WAV")
     }
 
     // 结束录音
     mutating func finishRecording() {
         phase = .received
         didVibrate = true
-        events.append("收到 0xC9 AA=4 音频结束")
-        events.append("写入 TX 0xC9 00 关闭发送")
-        events.append("写入 TX 0x08 02 震动 200ms")
+        events.append("接收结束信号成功：RX 0xC9 AA=4")
+        events.append("发送停止指令成功：TX 0xC9 00")
+        events.append("发送震动指令成功：TX 0x08 02 200ms")
+        events.append("确认录音结束成功")
     }
 
     // AI 分类
     mutating func processAI() {
         phase = .processing
-        events.append("上传 WAV 做语音转文字")
+        events.append("上传音频成功：WAV")
+        events.append("语音转文字成功")
         polishedText = "明天下午三点提醒我给客户发送方案。"
         intent = .reminder
         reminderText = "明天 15:00"
         phase = .ready
-        events.append("AI 返回 reminder 意图")
-        events.append("准备请求系统通知权限")
+        events.append("AI 分类成功：reminder")
+        events.append("提醒解析成功：明天 15:00")
+        events.append("链路完成成功")
     }
 
     // 重置演示

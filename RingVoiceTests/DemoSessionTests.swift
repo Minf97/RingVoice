@@ -15,7 +15,19 @@ final class DemoSessionTests: XCTestCase {
 
         XCTAssertEqual(session.phase, .connected)
         XCTAssertEqual(session.connectionText, "T3 Ring")
-        XCTAssertTrue(session.events.contains("订阅 RX 0xFFF7"))
+        XCTAssertTrue(session.events.contains("订阅音频通道成功：RX 0xFFF7"))
+    }
+
+    // 配对日志
+    func testConnectWritesPairingSuccessLogs() {
+        var session = DemoSession()
+
+        session.connect()
+
+        XCTAssertTrue(session.events.contains("搜索蓝牙设备成功：发现 T3 Ring"))
+        XCTAssertTrue(session.events.contains("发送配对指令成功：TX 0x01 PAIR_REQ"))
+        XCTAssertTrue(session.events.contains("接收配对信息成功：RX 0x81 PAIR_ACK"))
+        XCTAssertTrue(session.events.contains("确认配对成功：T3 Ring 已连接"))
     }
 
     // 录音状态
@@ -41,7 +53,7 @@ final class DemoSessionTests: XCTestCase {
 
         XCTAssertEqual(session.phase, .received)
         XCTAssertTrue(session.didVibrate)
-        XCTAssertTrue(session.events.contains("写入 TX 0x08 02 震动 200ms"))
+        XCTAssertTrue(session.events.contains("发送震动指令成功：TX 0x08 02 200ms"))
     }
 
     // AI 结果
@@ -58,4 +70,3 @@ final class DemoSessionTests: XCTestCase {
         XCTAssertEqual(session.reminderText, "明天 15:00")
     }
 }
-
