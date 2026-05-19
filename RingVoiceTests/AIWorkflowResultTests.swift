@@ -61,6 +61,24 @@ final class AIWorkflowResultTests: XCTestCase {
         XCTAssertEqual(result.summary, "材料整理")
     }
 
+    // 文本返回
+    func testStepAudioClientAcceptsPlainTextOutput() throws {
+        let output = try StepAudioAIClient.decodeOutput(from: "明天下午提醒我开会。")
+
+        XCTAssertEqual(output.text, "明天下午提醒我开会。")
+        XCTAssertNil(output.result)
+    }
+
+    // JSON 返回
+    func testStepAudioClientAcceptsStructuredOutput() throws {
+        let output = try StepAudioAIClient.decodeOutput(from: """
+        {"polishedText":"记录想法","summary":"一个想法","cards":[]}
+        """)
+
+        XCTAssertEqual(output.text, "记录想法")
+        XCTAssertEqual(output.result?.summary, "一个想法")
+    }
+
     // 音频响应
     func testStepAudioClientReadsAudioTranscript() throws {
         let response = """

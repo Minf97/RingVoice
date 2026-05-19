@@ -48,10 +48,14 @@ extension RingBluetoothSession {
 
             do {
                 let client = try StepAudioAIClient.fromEnvironment()
-                let result = try await client.generateInsights(fromWAVData: wavData)
-                self.audioResult = result
-                self.audioTranscript = result.polishedText
-                self.events.append("音频 AI 处理成功")
+                let output = try await client.generateUnderstanding(fromWAVData: wavData)
+                self.audioResult = output.result
+                self.audioTranscript = output.text
+                if output.result == nil {
+                    self.events.append("音频 AI 返回文本，未生成结构化卡片")
+                } else {
+                    self.events.append("音频 AI 处理成功")
+                }
             } catch {
                 self.events.append("音频 AI 处理失败：\(error.localizedDescription)")
                 self.markFailed(error.localizedDescription)

@@ -49,6 +49,15 @@ struct StepAudioAIClient {
 
     // 音频整理
     func generateInsights(fromWAVData wavData: Data) async throws -> AIWorkflowResult {
+        let output = try await generateUnderstanding(fromWAVData: wavData)
+        guard let result = output.result else {
+            throw StepAudioAIClientError.invalidJSON(Self.shorten(output.text))
+        }
+        return result
+    }
+
+    // 音频理解
+    func generateUnderstanding(fromWAVData wavData: Data) async throws -> StepAudioAIOutput {
         guard let url = URL(string: "\(baseURL)/chat/completions") else {
             throw StepAudioAIClientError.invalidURL
         }
@@ -78,7 +87,7 @@ struct StepAudioAIClient {
         }
 
         let content = try Self.decodeContentEnvelope(from: data)
-        return try Self.decodeResult(from: content)
+        return try Self.decodeOutput(from: content)
     }
 
     // 响应拆包
@@ -105,6 +114,21 @@ struct StepAudioAIClient {
         } catch {
             throw StepAudioAIClientError.invalidJSON(shorten(content))
         }
+    }
+
+    // 输出解析
+    static func decodeOutput(from content: String) throws -> StepAudioAIOutput {
+        let text = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard text.isEmpty == false else {
+            throw StepAudioAIClientError.emptyContent
+        }
+
+        guard text.contains("{") || text.contains("}") else {
+            return StepAudioAIOutput(text: text, result: nil)
+        }
+
+        let result = try decodeResult(from: text)
+        return StepAudioAIOutput(text: result.polishedText, result: result)
     }
 
     // 音频地址
@@ -166,120 +190,7 @@ struct StepAudioAIClient {
     """
 }
 
-private struct StepAudioChatRequest: Encodable {
-    let model: String
-    let modalities: [String]
-    let audio = StepAudioOutput()
-    let messages: [StepAudioMessage]
-    let stream: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case model
-        case modalities
-        case audio
-        case messages
-        case stream
-    }
-}
-
-private struct StepAudioOutput: Encodable {
-    let voice = "wenrounansheng"
-    let format = "wav"
-}
-
-private struct StepAudioMessage: Encodable {
-    let role: String
-    let content: StepAudioContent
-
-    static func system(_ content: String) -> StepAudioMessage {
-        StepAudioMessage(role: "system", content: .text(content))
-    }
-
-    static func userAudio(text: String, wavData: Data) -> StepAudioMessage {
-        StepAudioMessage(
-            role: "user",
-            content: .parts([
-                .text(text),
-                .inputAudio(StepAudioInputAudio(data: StepAudioAIClient.wavDataURI(wavData)))
-            ])
-        )
-    }
-}
-
-private enum StepAudioContent: Encodable {
-    case text(String)
-    case parts([StepAudioContentPart])
-
-    func encode(to encoder: Encoder) throws {
-        switch self {
-        case .text(let text):
-            var container = encoder.singleValueContainer()
-            try container.encode(text)
-        case .parts(let parts):
-            var container = encoder.singleValueContainer()
-            try container.encode(parts)
-        }
-    }
-}
-
-private enum StepAudioContentPart: Encodable {
-    case text(String)
-    case inputAudio(StepAudioInputAudio)
-
-    enum CodingKeys: String, CodingKey {
-        case type
-        case text
-        case inputAudio = "input_audio"
-    }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        switch self {
-        case .text(let text):
-            try container.encode("text", forKey: .type)
-            try container.encode(text, forKey: .text)
-        case .inputAudio(let audio):
-            try container.encode("input_audio", forKey: .type)
-            try container.encode(audio, forKey: .inputAudio)
-        }
-    }
-}
-
-private struct StepAudioInputAudio: Encodable {
-    let data: String
-    let format = "wav"
-}
-
-private struct StepAudioChatResponse: Decodable {
-    let choices: [Choice]
-
-    // 内容提取
-    func content() throws -> String {
-        guard let message = choices.first?.message else {
-            throw StepAudioAIClientError.emptyContent
-        }
-
-        if let content = message.content, content.isEmpty == false {
-            return content
-        }
-
-        if let transcript = message.audio?.transcript, transcript.isEmpty == false {
-            return transcript
-        }
-
-        throw StepAudioAIClientError.emptyContent
-    }
-
-    struct Choice: Decodable {
-        let message: Message
-    }
-
-    struct Message: Decodable {
-        let content: String?
-        let audio: Audio?
-    }
-
-    struct Audio: Decodable {
-        let transcript: String?
-    }
+struct StepAudioAIOutput: Equatable {
+    let text: String
+    let result: AIWorkflowResult?
 }

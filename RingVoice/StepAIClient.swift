@@ -12,6 +12,7 @@ enum StepAIClientError: LocalizedError {
     case invalidURL
     case invalidStatus(Int, String)
     case emptyContent
+    case emptyContentDetails(String)
 
     var errorDescription: String? {
         switch self {
@@ -23,6 +24,8 @@ enum StepAIClientError: LocalizedError {
             "AI 请求失败：HTTP \(code)，\(body)"
         case .emptyContent:
             "AI 返回内容为空"
+        case .emptyContentDetails(let details):
+            "AI 返回内容为空：\(details)"
         }
     }
 }
@@ -114,7 +117,17 @@ struct StepAIClient {
             throw StepAIClientError.invalidStatus(statusCode, body)
         }
 
-        return try JSONDecoder().decode(StepChatResponse.self, from: data)
+        return try Self.decodeResponseEnvelope(from: data)
+    }
+
+    // 响应解码
+    static func decodeContentEnvelope(from data: Data) throws -> String {
+        try decodeResponseEnvelope(from: data).content()
+    }
+
+    // 响应解码
+    private static func decodeResponseEnvelope(from data: Data) throws -> StepChatResponse {
+        try JSONDecoder().decode(StepChatResponse.self, from: data)
     }
 
     // 系统提示
@@ -170,7 +183,15 @@ private struct StepChatRequest: Encodable {
 
 fileprivate struct StepMessage: Codable {
     let role: String
-    let content: String
+    let content: String?
+    let reasoning: String?
+
+    // 消息构造
+    init(role: String, content: String, reasoning: String? = nil) {
+        self.role = role
+        self.content = content
+        self.reasoning = reasoning
+    }
 }
 
 private struct StepChatResponse: Decodable {
@@ -178,8 +199,14 @@ private struct StepChatResponse: Decodable {
 
     // 内容提取
     func content() throws -> String {
-        guard let content = choices.first?.message.content, content.isEmpty == false else {
-            throw StepAIClientError.emptyContent
+        guard let choice = choices.first else {
+            throw StepAIClientError.emptyContentDetails("choices 为空")
+        }
+
+        let content = choice.message.content?
+            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard content.isEmpty == false else {
+            throw StepAIClientError.emptyContentDetails(choice.emptyContentDetails)
         }
 
         return content
@@ -187,5 +214,18 @@ private struct StepChatResponse: Decodable {
 
     struct Choice: Decodable {
         let message: StepMessage
+        let finishReason: String?
+
+        // 空内容诊断
+        var emptyContentDetails: String {
+            let finish = finishReason ?? "nil"
+            let reasoningCount = message.reasoning?.count ?? 0
+            return "finish_reason=\(finish)，reasoning_length=\(reasoningCount)"
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case message
+            case finishReason = "finish_reason"
+        }
     }
 }
